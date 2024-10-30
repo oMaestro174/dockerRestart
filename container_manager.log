@@ -17,3 +17,9 @@
 2024-10-30 09:27:36,863 - INFO - Contêiner 92bff26b8603e97ecd9617a4fa89936898d12eaf785b0a968c15d315692df93e reiniciado com sucesso por IP: 10.120.164.163.
 2024-10-30 09:29:03,183 - INFO - Recebendo pedido para parar contêiner: 92bff26b8603e97ecd9617a4fa89936898d12eaf785b0a968c15d315692df93e de IP: 127.0.0.1
 2024-10-30 09:29:13,363 - INFO - Contêiner 92bff26b8603e97ecd9617a4fa89936898d12eaf785b0a968c15d315692df93e parado com sucesso por IP: 127.0.0.1.
+2024-10-30 11:48:28,230 - INFO - Recebendo pedido para reiniciar contêiner: fcf8853f25534a9016d61283038eba1fc86f2a19912dbca16121febdffdda85c de IP: 127.0.0.1
+2024-10-30 11:48:39,148 - INFO - Contêiner fcf8853f25534a9016d61283038eba1fc86f2a19912dbca16121febdffdda85c reiniciado com sucesso por IP: 127.0.0.1.
+2024-10-30 11:49:11,679 - INFO - Recebendo pedido para reiniciar contêiner: 92bff26b8603e97ecd9617a4fa89936898d12eaf785b0a968c15d315692df93e de IP: 127.0.0.1
+2024-10-30 11:49:11,862 - INFO - Contêiner 92bff26b8603e97ecd9617a4fa89936898d12eaf785b0a968c15d315692df93e reiniciado com sucesso por IP: 127.0.0.1.
+2024-10-30 11:49:15,588 - INFO - Recebendo pedido para parar contêiner: fcf8853f25534a9016d61283038eba1fc86f2a19912dbca16121febdffdda85c de IP: 127.0.0.1
+2024-10-30 11:49:33,038 - INFO - Contêiner fcf8853f25534a9016d61283038eba1fc86f2a19912dbca16121febdffdda85c parado com sucesso por IP: 127.0.0.1.
