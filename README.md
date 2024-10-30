@@ -13,8 +13,14 @@ Este projeto é uma aplicação web simples que permite gerenciar contêineres D
 ### Instalação de Dependências
 
 1. **Crie um ambiente virtual (opcional, mas recomendado)**:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Em Linux/Mac
-   venv\Scripts\activate  # Em Windows
+   
+ ```bash
+ python -m venv venv
+ source venv/bin/activate  # Em Linux/Mac
+ venv\Scripts\activate  # Em Windows
+ ```
 
+2. **Instale as dependências necessárias**:
+```bash
+pip install fastapi[all] docker
+```
