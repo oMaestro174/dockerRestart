@@ -1,24 +1,19 @@
+import csv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 import docker
 import logging
 
+# Configurações de log com diferentes níveis (INFO, ERROR, WARNING, etc.)
+logging.basicConfig(
+    filename="container_manager.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 # Inicialização do cliente Docker e da aplicação FastAPI
 app = FastAPI()
 client = docker.from_env()
-
-# Configuração do logging em arquivo
-log_file_path = "container_manager.log"
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(log_file_path), logging.StreamHandler()]
-)
-
-# Página inicial para listar e controlar contêineres
-@app.get("/", response_class=HTMLResponse)
-async def home():
-    return generate_html_content()
 
 # Função para gerar o HTML com a lista de contêineres
 def generate_html_content():
@@ -68,42 +63,102 @@ def generate_html_content():
                 transition: background-color 0.3s;
             }
             button.running {
-                background-color: #4CAF50; /* Verde para em execução */
+                background-color: #4CAF50;
             }
             button.stopped {
-                background-color: #FF5722; /* Vermelho para contêiner em execução */
+                background-color: #B0BEC5;
+                cursor: not-allowed;
             }
-            button.stop {
-                background-color: #B0BEC5; /* Cinza para contêiner parado */
-                cursor: not-allowed; /* Muda o cursor para indicar que não é clicável */
+            button.stop-running {
+                background-color: #FF5722;
+            }
+            button.loading {
+                background-color: #FFC107;
+                cursor: wait;
             }
             button:hover {
-                opacity: 0.9; /* Leve efeito ao passar o mouse */
+                opacity: 0.9;
             }
             span {
                 font-weight: bold;
             }
+            #feedback {
+                color: green;
+                text-align: center;
+                margin-top: 20px;
+                display: none;
+            }
         </style>
+        <script>
+            let bot;
+
+            function botaoClicado(e) {
+                bot = e;
+                e.style.backgroundColor = 'red';
+                e.disabled = true;
+            }
+
+            function setLoadingState(button, message) {
+                button.classList.add('loading');
+                button.disabled = true;
+                button.innerText = message;
+                document.getElementById('feedback').innerText = message;
+                document.getElementById('feedback').style.display = 'block';
+            }
+
+            function updateContainerStatus(id, newStatus, isRunning) {
+                const statusSpan = document.getElementById(`status-${id}`);
+                const buttonRestart = document.getElementById(`restart-${id}`);
+                const buttonStop = document.getElementById(`stop-${id}`);
+                
+                statusSpan.innerText = newStatus;
+
+                if (isRunning) {
+                    buttonStop.classList.remove('stopped');
+                    buttonStop.classList.add('stop-running');
+                    buttonStop.disabled = false;
+                    buttonRestart.disabled = false;
+                } else {
+                    buttonStop.classList.add('stopped');
+                    buttonStop.classList.remove('stop-running');
+                    buttonStop.disabled = true;
+                    buttonRestart.disabled = false;
+                }
+
+                document.getElementById('feedback').style.display = 'none';
+            }
+        </script>
     </head>
     <body>
         <h1>Gerenciador de Contêineres</h1>
+        <div id="feedback"></div>
         <ul>
     """
 
-    # Gerar a lista de contêineres
     for container in containers:
         status_span_id = f"status-{container.id}"
+        restart_button_id = f"restart-{container.id}"
+        stop_button_id = f"stop-{container.id}"
+        status_class = "running" if container.status == "running" else "stopped"
+        stop_button_class = "stop-running" if container.status == "running" else "stopped"
         html_content += f"""
             <li>
                 {container.name} - Status: <span id="{status_span_id}">{container.status}</span>
                 <div>
-                    <button class="running" hx-post="/containers/{container.id}/restart" hx-target="#{status_span_id}">
+                    <button id="{restart_button_id}" class="running" 
+                            hx-post="/containers/{container.id}/restart" 
+                            hx-target="#{status_span_id}" 
+                            hx-swap="outerHTML"
+                            hx-on="htmx:beforeRequest=setLoadingState(this, 'Reiniciando...');botaoClicado(this)"
+                            hx-on="htmx:afterRequest=updateContainerStatus('{container.id}', 'Em execução', true)">
                         Reiniciar
                     </button>
-                    <button class="{'stopped' if container.status == 'running' else 'stop'}" 
+                    <button id="{stop_button_id}" class="{stop_button_class}" 
                             hx-post="/containers/{container.id}/stop" 
-                            hx-target="#{status_span_id}"
-                            {'disabled' if container.status != 'running' else ''}>
+                            hx-target="#{status_span_id}"  
+                            hx-swap="outerHTML" 
+                            hx-on="htmx:beforeRequest=setLoadingState(this, 'Parando...');botaoClicado(this)"
+                            hx-on="htmx:afterRequest=updateContainerStatus('{container.id}', 'Parado', false)">
                         Parar
                     </button>
                 </div>
@@ -115,19 +170,24 @@ def generate_html_content():
     </body>
     </html>
     """
-    return html_content.strip()  # Remove espaços em branco do início e do fim
+    return html_content.strip()
+
+# Rota para a página inicial
+@app.get("/", response_class=HTMLResponse)
+async def home():
+    return generate_html_content()
 
 # Endpoint para reiniciar o contêiner
 @app.post("/containers/{container_id}/restart")
 async def restart_container(request: Request, container_id: str):
-    ip_address = request.client.host  # Obtém o IP do cliente
+    ip_address = request.client.host
     logging.info(f"Recebendo pedido para reiniciar contêiner: {container_id} de IP: {ip_address}")
     try:
         container = client.containers.get(container_id)
         container.restart()
-        container.reload()  # Atualiza o status do contêiner
+        container.reload()
         logging.info(f"Contêiner {container_id} reiniciado com sucesso por IP: {ip_address}.")
-        return container.status  # Retorna apenas o status atualizado do contêiner
+        return HTMLResponse(content='<span style="color: green;">Em execução</span>', status_code=200)
     except docker.errors.NotFound:
         logging.error(f"Contêiner {container_id} não encontrado para reiniciar.")
         raise HTTPException(status_code=404, detail="Contêiner não encontrado")
@@ -138,16 +198,16 @@ async def restart_container(request: Request, container_id: str):
 # Endpoint para parar o contêiner
 @app.post("/containers/{container_id}/stop")
 async def stop_container(request: Request, container_id: str):
-    ip_address = request.client.host  # Obtém o IP do cliente
+    ip_address = request.client.host
     logging.info(f"Recebendo pedido para parar contêiner: {container_id} de IP: {ip_address}")
     try:
         container = client.containers.get(container_id)
         container.stop()
-        container.reload()  # Atualiza o status do contêiner
+        container.reload()
         logging.info(f"Contêiner {container_id} parado com sucesso por IP: {ip_address}.")
-        return container.status  # Retorna apenas o status atualizado do contêiner
+        return HTMLResponse(content='<span style="color: gray;">Parado</span>', status_code=200)
     except docker.errors.NotFound:
-        logging.error(f"Contêiner {container_id} não encontrado para parar.")
+        logging.warning(f"Tentativa de parar contêiner não encontrado: {container_id}")
         raise HTTPException(status_code=404, detail="Contêiner não encontrado")
     except Exception as e:
         logging.error(f"Erro ao parar contêiner {container_id}: {e}")
