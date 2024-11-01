@@ -328,3 +328,50 @@
 2024-11-01T12:55:59.761094-0400 INFO Listando todos os contêineres Docker (incluindo parados)
 2024-11-01T12:56:04.761469-0400 INFO Listando todos os contêineres Docker (incluindo parados)
 2024-11-01T12:56:50.766649-0400 INFO Listando todos os contêineres Docker (incluindo parados)
+2024-11-01T13:00:50.824367-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:00:54.492557-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:00:57.073091-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:01:02.118662-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:01:07.123512-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:01:11.998980-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:01:17.025985-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:05:51.204299-0400 INFO Loaded 0 container IDs from CSV
+2024-11-01T13:06:51.016240-0400 INFO Loaded 0 container IDs from CSV
+2024-11-01T13:07:06.082200-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:07:11.076508-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:07:12.543734-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:07:17.530728-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:07:22.568265-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:07:27.639391-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:07:32.521153-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:07:37.677846-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:07:43.130292-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:07:47.659734-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:07:52.776828-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:07:57.812696-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:08:02.710125-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:08:07.692606-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:08:12.546582-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:08:17.666763-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:08:22.745677-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:08:27.739245-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:08:32.729121-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:08:37.767068-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:08:42.768973-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:08:47.829033-0400 INFO Listando 6 contêineres Docker filtrados
+2024-11-01T13:09:51.111794-0400 INFO Carregados 4 nomes de contêineres do CSV
+2024-11-01T13:09:56.814919-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:09:57.539323-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:10:01.913232-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:10:06.855851-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:10:18.436593-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:10:23.550028-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:10:28.382028-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:10:29.470853-0400 INFO Contêiner 8e1195fa7fab iniciado
+2024-11-01T13:10:31.841709-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:10:33.338091-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:10:38.263635-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:10:42.562355-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:10:47.567692-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:10:52.529972-0400 INFO Listando 4 contêineres Docker filtrados
+2024-11-01T13:10:57.314401-0400 INFO Listando 0 contêineres Docker filtrados
