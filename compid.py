@@ -2,36 +2,23 @@ import csv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 import docker
-import os
 import logging
+import os
 
-# Configurações de log com diferentes níveis (INFO, ERROR, WARNING, etc.)
+# Configurações de log
 logging.basicConfig(
     filename="container_manager.log",
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s [%(levelname)s] %(message)s"
 )
 
 # Logar o PID do processo atual
 pid = os.getpid()
 logging.info(f"Aplicação iniciada com PID: {pid}")
 
-
 # Inicialização do cliente Docker e da aplicação FastAPI
 app = FastAPI()
 client = docker.from_env()
-
-# Carregar IDs ou nomes de contêineres permitidos a partir de um arquivo CSV
-def load_allowed_containers():
-    allowed_containers = set()
-    with open("containers.csv", newline="") as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            allowed_containers.add(row[0].strip())
-    logging.info("Lista de contêineres permitidos carregada com sucesso.")
-    return allowed_containers
-
-allowed_containers = load_allowed_containers()
 
 # Função para gerar o HTML com a lista de contêineres permitidos
 def generate_html_content():
@@ -91,7 +78,7 @@ def generate_html_content():
                 background-color: #FF5722;
             }
             button.loading {
-                background-color: #FFC107;
+                background-color: #FFC107; /* Amarelo para indicar carregando */
                 cursor: wait;
             }
             button:hover {
@@ -108,14 +95,6 @@ def generate_html_content():
             }
         </style>
         <script>
-            let bot;
-
-            function botaoClicado(e) {
-                bot = e;
-                e.style.backgroundColor = 'red';
-                e.disabled = true;
-            }
-
             function setLoadingState(button, message) {
                 button.classList.add('loading');
                 button.disabled = true;
@@ -124,25 +103,15 @@ def generate_html_content():
                 document.getElementById('feedback').style.display = 'block';
             }
 
-            function updateContainerStatus(id, newStatus, isRunning) {
-                const statusSpan = document.getElementById(`status-${id}`);
-                const buttonRestart = document.getElementById(`restart-${id}`);
-                const buttonStop = document.getElementById(`stop-${id}`);
-                
-                statusSpan.innerText = newStatus;
+            function updateButtonState(button, isRunning) {
+                button.classList.remove('loading');
+                button.disabled = false;
+                button.classList.toggle('stopped', !isRunning);
+                button.classList.toggle('running', isRunning);
+                button.innerText = isRunning ? 'Parar' : 'Parado';
+            }
 
-                if (isRunning) {
-                    buttonStop.classList.remove('stopped');
-                    buttonStop.classList.add('stop-running');
-                    buttonStop.disabled = false;
-                    buttonRestart.disabled = false;
-                } else {
-                    buttonStop.classList.add('stopped');
-                    buttonStop.classList.remove('stop-running');
-                    buttonStop.disabled = true;
-                    buttonRestart.disabled = false;
-                }
-
+            function hideFeedback() {
                 document.getElementById('feedback').style.display = 'none';
             }
         </script>
@@ -154,35 +123,29 @@ def generate_html_content():
     """
 
     for container in containers:
-        if container.id in allowed_containers or container.name in allowed_containers:
-            status_span_id = f"status-{container.id}"
-            restart_button_id = f"restart-{container.id}"
-            stop_button_id = f"stop-{container.id}"
-            status_class = "running" if container.status == "running" else "stopped"
-            stop_button_class = "stop-running" if container.status == "running" else "stopped"
-            html_content += f"""
-                <li>
-                    {container.name} - Status: <span id="{status_span_id}">{container.status}</span>
-                    <div>
-                        <button id="{restart_button_id}" class="running" 
-                                hx-post="/containers/{container.id}/restart" 
-                                hx-target="#{status_span_id}" 
-                                hx-swap="outerHTML"
-                                hx-on="htmx:beforeRequest=setLoadingState(this, 'Reiniciando...');botaoClicado(this)"
-                                hx-on="htmx:afterRequest=updateContainerStatus('{container.id}', 'Em execução', true)">
-                            Reiniciar
-                        </button>
-                        <button id="{stop_button_id}" class="{stop_button_class}" 
-                                hx-post="/containers/{container.id}/stop" 
-                                hx-target="#{status_span_id}"  
-                                hx-swap="outerHTML" 
-                                hx-on="htmx:beforeRequest=setLoadingState(this, 'Parando...');botaoClicado(this)"
-                                hx-on="htmx:afterRequest=updateContainerStatus('{container.id}', 'Parado', false)">
-                            Parar
-                        </button>
-                    </div>
-                </li>
-            """
+        status_span_id = f"status-{container.id}"
+        status_class = "running" if container.status == "running" else "stopped"
+        stop_button_class = "stop-running" if container.status == "running" else "stopped"
+        html_content += f"""
+            <li>
+                {container.name} - Status: <span id="{status_span_id}">{container.status}</span>
+                <div>
+                    <button class="running" hx-post="/containers/{container.id}/restart" hx-target="#{status_span_id}" hx-on="htmx:response:showFeedback('Contêiner reiniciado com sucesso!')">
+                        Reiniciar
+                    </button>
+                    <button class="{stop_button_class}" 
+                            hx-post="/containers/{container.id}/stop" 
+                            hx-target="closest li"
+                            hx-swap="innerHTML" 
+                            hx-trigger="click" 
+                            hx-include="this"
+                            hx-on="htmx:beforeRequest=setLoadingState(this, 'Parando...');"
+                            hx-on="htmx:afterRequest=hideFeedback">
+                        Parar
+                    </button>
+                </div>
+            </li>
+        """
     
     html_content += """
         </ul>
@@ -206,7 +169,7 @@ async def restart_container(request: Request, container_id: str):
         container.restart()
         container.reload()
         logging.info(f"Contêiner {container_id} reiniciado com sucesso por IP: {ip_address}.")
-        return HTMLResponse(content='<span style="color: green;">Em execução</span>', status_code=200)
+        return HTMLResponse(content=f'<span style="color: green;">Em execução</span>', status_code=200)
     except docker.errors.NotFound:
         logging.error(f"Contêiner {container_id} não encontrado para reiniciar.")
         raise HTTPException(status_code=404, detail="Contêiner não encontrado")
@@ -224,9 +187,23 @@ async def stop_container(request: Request, container_id: str):
         container.stop()
         container.reload()
         logging.info(f"Contêiner {container_id} parado com sucesso por IP: {ip_address}.")
-        return HTMLResponse(content='<span style="color: gray;">Parado</span>', status_code=200)
+        # Retorna o HTML atualizado do contêiner após parar
+        new_html = f"""
+            <li>
+                {container.name} - Status: <span id="status-{container.id}" style="color: gray;">Parado</span>
+                <div>
+                    <button class="running" hx-post="/containers/{container.id}/restart" hx-target="#status-{container.id}" hx-on="htmx:response:showFeedback('Contêiner reiniciado com sucesso!')">
+                        Reiniciar
+                    </button>
+                    <button class="stopped" disabled>
+                        Parar
+                    </button>
+                </div>
+            </li>
+        """
+        return HTMLResponse(content=new_html, status_code=200)
     except docker.errors.NotFound:
-        logging.warning(f"Tentativa de parar contêiner não encontrado: {container_id}")
+        logging.error(f"Contêiner {container_id} não encontrado para parar.")
         raise HTTPException(status_code=404, detail="Contêiner não encontrado")
     except Exception as e:
         logging.error(f"Erro ao parar contêiner {container_id}: {e}")

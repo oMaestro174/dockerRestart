@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Contêineres Docker</title>
+    <script src="https://unpkg.com/htmx.org@1.7.0"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #ecf0f1;
+            --text-color: #34495e;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        #container-list {
+            list-style-type: none;
+            padding: 0;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .container-item {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .container-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .container-info {
+            margin-bottom: 15px;
+        }
+
+        .container-name {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1.2em;
+        }
+
+        .container-id {
+            font-family: monospace;
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .container-status {
+            font-weight: bold;
+        }
+
+        .status-running {
+            color: var(--secondary-color);
+        }
+
+        .status-stopped {
+            color: var(--danger-color);
+        }
+
+        .container-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .btn-start {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-stop {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-restart {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .no-containers {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gerenciador de Contêineres Docker</h1>
+    <ul id="container-list">
+        <!-- Os contêineres serão gerados aqui -->
+    </ul>
+
+    <script>
+        async function fetchContainers() {
+            try {
+                const response = await fetch('http://localhost:8080/containers');
+                const data = await response.json();
+
+                const containerList = document.getElementById('container-list');
+                containerList.innerHTML = '';
+
+                if (data.containers && data.containers.length > 0) {
+                    data.containers.forEach(container => {
+                        const li = document.createElement('li');
+                        li.className = 'container-item';
+                        const isRunning = container.State === 'running';
+                        li.innerHTML = `
+                            <div class="container-info">
+                                <span class="container-name">${container.Names}</span>
+                                <br>
+                                <span class="container-id">ID: ${container.ID}</span>
+                                <br>
+                                Status: <span class="container-status ${isRunning ? 'status-running' : 'status-stopped'}">${container.Status}</span>
+                            </div>
+                            <div class="container-actions">
+                                ${isRunning 
+                                    ? `<button class="btn-stop" onclick="stopContainer('${container.ID}')">Parar</button>` 
+                                    : `<button class="btn-start" onclick="startContainer('${container.ID}')">Iniciar</button>`}
+                                <button class="btn-restart" onclick="restartContainer('${container.ID}')">Reiniciar</button>
+                            </div>`;
+                        containerList.appendChild(li);
+                    });
+                } else {
+                    const li = document.createElement('li');
+                    li.className = 'no-containers';
+                    li.textContent = 'Nenhum contêiner encontrado.';
+                    containerList.appendChild(li);
+                }
+            } catch (error) {
+                console.error('Erro ao buscar contêineres:', error);
+            }
+        }
+
+        async function stopContainer(containerId) {
+            try {
+                const response = await fetch(`http://localhost:8080/containers/${containerId}/stop`, { method: 'POST' });
+                const result = await response.json();
+                alert(result.message);
+                fetchContainers();
+            } catch (error) {
+                console.error('Erro ao parar contêiner:', error);
+            }
+        }
+
+        async function startContainer(containerId) {
+            try {
+                const response = await fetch(`http://localhost:8080/containers/${containerId}/start`, { method: 'POST' });
+                const result = await response.json();
+                alert(result.message);
+                fetchContainers();
+            } catch (error) {
+                console.error('Erro ao iniciar contêiner:', error);
+            }
+        }
+
+        async function restartContainer(containerId) {
+            try {
+                const response = await fetch(`http://localhost:8080/containers/${containerId}/restart`, { method: 'POST' });
+                const result = await response.json();
+                alert(result.message);
+                fetchContainers();
+            } catch (error) {
+                console.error('Erro ao reiniciar contêiner:', error);
+            }
+        }
+
+        // Fetch containers initially and every 5 seconds
+        fetchContainers();
+        setInterval(fetchContainers, 5000);
+    </script>
+</body>
+</html>

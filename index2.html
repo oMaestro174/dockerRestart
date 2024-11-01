@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Contêineres Docker</title>
+    <script src="https://unpkg.com/htmx.org@1.7.0"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #ecf0f1;
+            --text-color: #34495e;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+            text-align: center;
+        }
+
+        #container-list, #csv-upload {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #csv-upload {
+            text-align: center;
+        }
+
+        .container-item {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .container-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .container-info {
+            margin-bottom: 15px;
+        }
+
+        .container-name {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1.2em;
+        }
+
+        .container-id {
+            font-family: monospace;
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .container-status {
+            font-weight: bold;
+        }
+
+        .status-running {
+            color: var(--secondary-color);
+        }
+
+        .status-stopped {
+            color: var(--danger-color);
+        }
+
+        .container-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        button, .file-input-label {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover, .file-input-label:hover {
+            opacity: 0.9;
+        }
+
+        .btn-start {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-stop {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-restart {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .file-input-label {
+            background-color: var(--primary-color);
+            color: white;
+            display: inline-block;
+        }
+
+        #csv-file {
+            display: none;
+        }
+
+        .no-containers {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gerenciador de Contêineres Docker</h1>
+    
+    <div id="csv-upload">
+        <h2>Filtrar Contêineres</h2>
+        <form id="upload-form">
+            <label for="csv-file" class="file-input-label">Escolher arquivo CSV</label>
+            <input type="file" id="csv-file" accept=".csv" />
+            <button type="submit" class="btn-start">Enviar CSV</button>
+        </form>
+    </div>
+
+    <div id="container-list">
+        <!-- Os contêineres serão gerados aqui -->
+    </div>
+
+    <script>
+        async function fetchContainers() {
+            try {
+                const response = await fetch('http://localhost:8000/containers');
+                const data = await response.json();
+
+                const containerList = document.getElementById('container-list');
+                containerList.innerHTML = '<h2>Lista de Contêineres</h2>';
+
+                if (data.containers && data.containers.length > 0) {
+                    data.containers.forEach(container => {
+                        const div = document.createElement('div');
+                        div.className = 'container-item';
+                        const isRunning = container.State === 'running';
+                        div.innerHTML = `
+                            <div class="container-info">
+                                <span class="container-name">${container.Names}</span>
+                                <br>
+                                <span class="container-id">ID: ${container.ID}</span>
+                                <br>
+                                Status: <span class="container-status ${isRunning ? 'status-running' : 'status-stopped'}">${container.Status}</span>
+                            </div>
+                            <div class="container-actions">
+                                ${isRunning 
+                                    ? `<button class="btn-stop" onclick="stopContainer('${container.ID}')">Parar</button>` 
+                                    : `<button class="btn-start" onclick="startContainer('${container.ID}')">Iniciar</button>`}
+                                <button class="btn-restart" onclick="restartContainer('${container.ID}')">Reiniciar</button>
+                            </div>`;
+                        containerList.appendChild(div);
+                    });
+                } else {
+                    const div = document.createElement('div');
+                    div.className = 'no-containers';
+                    div.textContent = 'Nenhum contêiner encontrado.';
+                    containerList.appendChild(div);
+                }
+            } catch (error) {
+                console.error('Erro ao buscar contêineres:', error);
+            }
+        }
+
+        async function stopContainer(containerId) {
+            try {
+                const response = await fetch(`http://localhost:8000/containers/${containerId}/stop`, { method: 'POST' });
+                const result = await response.json();
+                alert(result.message);
+                fetchContainers();
+            } catch (error) {
+                console.error('Erro ao parar contêiner:', error);
+            }
+        }
+
+        async function startContainer(containerId) {
+            try {
+                const response = await fetch(`http://localhost:8000/containers/${containerId}/start`, { method: 'POST' });
+                const result = await response.json();
+                alert(result.message);
+                fetchContainers();
+            } catch (error) {
+                console.error('Erro ao iniciar contêiner:', error);
+            }
+        }
+
+        async function restartContainer(containerId) {
+            try {
+                const response = await fetch(`http://localhost:8000/containers/${containerId}/restart`, { method: 'POST' });
+                const result = await response.json();
+                alert(result.message);
+                fetchContainers();
+            } catch (error) {
+                console.error('Erro ao reiniciar contêiner:', error);
+            }
+        }
+
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('csv-file');
+            const file = fileInput.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                try {
+                    const response = await fetch('http://localhost:8000/upload-csv', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    alert(result.message);
+                    fetchContainers();
+                } catch (error) {
+                    console.error('Erro ao enviar CSV:', error);
+                }
+            } else {
+                alert('Por favor, selecione um arquivo CSV.');
+            }
+        });
+
+        // Fetch containers initially
+        fetchContainers();
+    </script>
+</body>
+</html>

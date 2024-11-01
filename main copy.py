@@ -5,6 +5,7 @@ import docker
 import os
 import logging
 
+
 # Configurações de log com diferentes níveis (INFO, ERROR, WARNING, etc.)
 logging.basicConfig(
     filename="container_manager.log",
@@ -17,23 +18,12 @@ pid = os.getpid()
 logging.info(f"Aplicação iniciada com PID: {pid}")
 
 
+
 # Inicialização do cliente Docker e da aplicação FastAPI
 app = FastAPI()
 client = docker.from_env()
 
-# Carregar IDs ou nomes de contêineres permitidos a partir de um arquivo CSV
-def load_allowed_containers():
-    allowed_containers = set()
-    with open("containers.csv", newline="") as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            allowed_containers.add(row[0].strip())
-    logging.info("Lista de contêineres permitidos carregada com sucesso.")
-    return allowed_containers
-
-allowed_containers = load_allowed_containers()
-
-# Função para gerar o HTML com a lista de contêineres permitidos
+# Função para gerar o HTML com a lista de contêineres
 def generate_html_content():
     containers = client.containers.list(all=True)
     html_content = """
@@ -154,35 +144,34 @@ def generate_html_content():
     """
 
     for container in containers:
-        if container.id in allowed_containers or container.name in allowed_containers:
-            status_span_id = f"status-{container.id}"
-            restart_button_id = f"restart-{container.id}"
-            stop_button_id = f"stop-{container.id}"
-            status_class = "running" if container.status == "running" else "stopped"
-            stop_button_class = "stop-running" if container.status == "running" else "stopped"
-            html_content += f"""
-                <li>
-                    {container.name} - Status: <span id="{status_span_id}">{container.status}</span>
-                    <div>
-                        <button id="{restart_button_id}" class="running" 
-                                hx-post="/containers/{container.id}/restart" 
-                                hx-target="#{status_span_id}" 
-                                hx-swap="outerHTML"
-                                hx-on="htmx:beforeRequest=setLoadingState(this, 'Reiniciando...');botaoClicado(this)"
-                                hx-on="htmx:afterRequest=updateContainerStatus('{container.id}', 'Em execução', true)">
-                            Reiniciar
-                        </button>
-                        <button id="{stop_button_id}" class="{stop_button_class}" 
-                                hx-post="/containers/{container.id}/stop" 
-                                hx-target="#{status_span_id}"  
-                                hx-swap="outerHTML" 
-                                hx-on="htmx:beforeRequest=setLoadingState(this, 'Parando...');botaoClicado(this)"
-                                hx-on="htmx:afterRequest=updateContainerStatus('{container.id}', 'Parado', false)">
-                            Parar
-                        </button>
-                    </div>
-                </li>
-            """
+        status_span_id = f"status-{container.id}"
+        restart_button_id = f"restart-{container.id}"
+        stop_button_id = f"stop-{container.id}"
+        status_class = "running" if container.status == "running" else "stopped"
+        stop_button_class = "stop-running" if container.status == "running" else "stopped"
+        html_content += f"""
+            <li>
+                {container.name} - Status: <span id="{status_span_id}">{container.status}</span>
+                <div>
+                    <button id="{restart_button_id}" class="running" 
+                            hx-post="/containers/{container.id}/restart" 
+                            hx-target="#{status_span_id}" 
+                            hx-swap="outerHTML"
+                            hx-on="htmx:beforeRequest=setLoadingState(this, 'Reiniciando...');botaoClicado(this)"
+                            hx-on="htmx:afterRequest=updateContainerStatus('{container.id}', 'Em execução', true)">
+                        Reiniciar
+                    </button>
+                    <button id="{stop_button_id}" class="{stop_button_class}" 
+                            hx-post="/containers/{container.id}/stop" 
+                            hx-target="#{status_span_id}"  
+                            hx-swap="outerHTML" 
+                            hx-on="htmx:beforeRequest=setLoadingState(this, 'Parando...');botaoClicado(this)"
+                            hx-on="htmx:afterRequest=updateContainerStatus('{container.id}', 'Parado', false)">
+                        Parar
+                    </button>
+                </div>
+            </li>
+        """
     
     html_content += """
         </ul>
